@@ -262,6 +262,7 @@ void loadSettings()
     TRANS_EFFECT = Settings.getUInt("TEFF", 1);
     TIME_MODE = Settings.getUInt("TMODE", 1);
     BINARY_TICKER_TEXT = Settings.getString("BTEXT", "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG   ");
+    FW_UPDATE_URL = Settings.getString("FWURL", "");
     BINARY_TEMP_X = Settings.getUInt("BTEMPX", 10);
     BINARY_TEMP_Y = Settings.getUInt("BTEMPY", 4);
     BINARY_TEMP_DIGITS = Settings.getUInt("BTDIG", 3);
@@ -326,6 +327,7 @@ void saveSettings()
     Settings.putUInt("TCOL", TEXTCOLOR_888);
     Settings.putUInt("TMODE", TIME_MODE);
     Settings.putString("BTEXT", BINARY_TICKER_TEXT);
+    Settings.putString("FWURL", FW_UPDATE_URL);
     Settings.putUInt("BTEMPX", BINARY_TEMP_X);
     Settings.putUInt("BTEMPY", BINARY_TEMP_Y);
     Settings.putUInt("BTDIG", BINARY_TEMP_DIGITS);
@@ -455,6 +457,7 @@ bool DFPLAYER_ACTIVE = false;
 bool ROTATE_SCREEN = false;
 uint8_t TIME_MODE = 1;
 String BINARY_TICKER_TEXT = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG   ";
+String FW_UPDATE_URL = "";
 uint8_t BINARY_TEMP_X = 10;
 uint8_t BINARY_TEMP_Y = 2;
 uint8_t BINARY_TEMP_DIGITS = 3;

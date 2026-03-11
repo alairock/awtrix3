@@ -65,7 +65,11 @@ void UpdateManager_::updateFirmware()
     httpUpdate.onProgress(update_progress);
     httpUpdate.onError(update_error);
 
-    t_httpUpdate_return ret = httpUpdate.update(client, URL_fw_Bin);
+    String fwBinUrl = FW_UPDATE_URL;
+    if (fwBinUrl.length() == 0)
+        fwBinUrl = URL_fw_Bin;
+
+    t_httpUpdate_return ret = httpUpdate.update(client, fwBinUrl);
     switch (ret)
     {
     case HTTP_UPDATE_FAILED:

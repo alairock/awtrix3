@@ -2029,6 +2029,7 @@ String DisplayManager_::getSettings()
   doc["ATIME"] = TIME_PER_APP / 1000;
   doc["TMODE"] = TIME_MODE;
   doc["BTEXT"] = BINARY_TICKER_TEXT;
+  doc["FWURL"] = FW_UPDATE_URL;
   doc["BTEMPX"] = BINARY_TEMP_X;
   doc["BTEMPY"] = BINARY_TEMP_Y;
   doc["BTDIG"] = BINARY_TEMP_DIGITS;
@@ -2123,6 +2124,7 @@ void DisplayManager_::setNewSettings(const char *json)
 
   TIME_MODE = doc.containsKey("TMODE") ? doc["TMODE"].as<int>() : TIME_MODE;
   BINARY_TICKER_TEXT = doc.containsKey("BTEXT") ? doc["BTEXT"].as<String>() : BINARY_TICKER_TEXT;
+  FW_UPDATE_URL = doc.containsKey("FWURL") ? doc["FWURL"].as<String>() : FW_UPDATE_URL;
   BINARY_TEMP_X = doc.containsKey("BTEMPX") ? doc["BTEMPX"].as<int>() : BINARY_TEMP_X;
   BINARY_TEMP_Y = doc.containsKey("BTEMPY") ? doc["BTEMPY"].as<int>() : BINARY_TEMP_Y;
   BINARY_TEMP_DIGITS = doc.containsKey("BTDIG") ? doc["BTDIG"].as<int>() : BINARY_TEMP_DIGITS;

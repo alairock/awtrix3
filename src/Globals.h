@@ -122,6 +122,7 @@ extern bool ROTATE_SCREEN;
 extern long STATS_INTERVAL;
 extern uint8_t TIME_MODE;
 extern String BINARY_TICKER_TEXT;
+extern String FW_UPDATE_URL;
 extern uint8_t BINARY_TEMP_X;
 extern uint8_t BINARY_TEMP_Y;
 extern uint8_t BINARY_TEMP_DIGITS;
