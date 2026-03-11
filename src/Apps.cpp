@@ -549,10 +549,10 @@ void TimeApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
             }
         }
 
-        // AM/PM indicator in top-right corner (dim red for PM, dim purple for AM)
+        // AM/PM indicator in top-right corner (always visible red family)
         if (use12h)
         {
-            uint32_t ampm = isPM ? rgb(50, 0, 0) : rgb(20, 0, 20);
+            uint32_t ampm = isPM ? rgb(110, 0, 0) : rgb(55, 0, 0);
             matrix->drawPixel(31 + x, 0 + y, ampm);
         }
 
