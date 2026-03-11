@@ -2032,6 +2032,7 @@ String DisplayManager_::getSettings()
   doc["BTEMPX"] = BINARY_TEMP_X;
   doc["BTEMPY"] = BINARY_TEMP_Y;
   doc["BTDIG"] = BINARY_TEMP_DIGITS;
+  doc["BSHIFT"] = BINARY_SHIFT_X;
   doc["BTOUTF"] = BINARY_OUT_TEMP_F;
   doc["BROWMODE"] = BINARY_ROW_MODE;
   doc["BROWPROG"] = BINARY_ROW_PROGRESS;
@@ -2125,6 +2126,7 @@ void DisplayManager_::setNewSettings(const char *json)
   BINARY_TEMP_X = doc.containsKey("BTEMPX") ? doc["BTEMPX"].as<int>() : BINARY_TEMP_X;
   BINARY_TEMP_Y = doc.containsKey("BTEMPY") ? doc["BTEMPY"].as<int>() : BINARY_TEMP_Y;
   BINARY_TEMP_DIGITS = doc.containsKey("BTDIG") ? doc["BTDIG"].as<int>() : BINARY_TEMP_DIGITS;
+  BINARY_SHIFT_X = doc.containsKey("BSHIFT") ? doc["BSHIFT"].as<int>() : BINARY_SHIFT_X;
   BINARY_OUT_TEMP_F = doc.containsKey("BTOUTF") ? doc["BTOUTF"].as<int>() : BINARY_OUT_TEMP_F;
   BINARY_ROW_MODE = doc.containsKey("BROWMODE") ? doc["BROWMODE"].as<int>() : BINARY_ROW_MODE;
   BINARY_ROW_PROGRESS = doc.containsKey("BROWPROG") ? doc["BROWPROG"].as<int>() : BINARY_ROW_PROGRESS;

@@ -125,6 +125,7 @@ extern String BINARY_TICKER_TEXT;
 extern uint8_t BINARY_TEMP_X;
 extern uint8_t BINARY_TEMP_Y;
 extern uint8_t BINARY_TEMP_DIGITS;
+extern int8_t BINARY_SHIFT_X;
 extern int16_t BINARY_OUT_TEMP_F;
 extern uint8_t BINARY_ROW_MODE;      // 0=scene,1=progress,2=auto
 extern int16_t BINARY_ROW_PROGRESS;  // 0..100, <0 disabled

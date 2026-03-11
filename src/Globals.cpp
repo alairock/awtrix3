@@ -265,6 +265,7 @@ void loadSettings()
     BINARY_TEMP_X = Settings.getUInt("BTEMPX", 10);
     BINARY_TEMP_Y = Settings.getUInt("BTEMPY", 4);
     BINARY_TEMP_DIGITS = Settings.getUInt("BTDIG", 3);
+    BINARY_SHIFT_X = Settings.getInt("BSHIFT", 1);
     BINARY_OUT_TEMP_F = Settings.getInt("BTOUTF", -1000);
     BINARY_ROW_MODE = Settings.getUInt("BROWMODE", 2);
     BINARY_ROW_PROGRESS = Settings.getInt("BROWPROG", -1);
@@ -328,6 +329,7 @@ void saveSettings()
     Settings.putUInt("BTEMPX", BINARY_TEMP_X);
     Settings.putUInt("BTEMPY", BINARY_TEMP_Y);
     Settings.putUInt("BTDIG", BINARY_TEMP_DIGITS);
+    Settings.putInt("BSHIFT", BINARY_SHIFT_X);
     Settings.putInt("BTOUTF", BINARY_OUT_TEMP_F);
     Settings.putUInt("BROWMODE", BINARY_ROW_MODE);
     Settings.putInt("BROWPROG", BINARY_ROW_PROGRESS);
@@ -454,8 +456,9 @@ bool ROTATE_SCREEN = false;
 uint8_t TIME_MODE = 1;
 String BINARY_TICKER_TEXT = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG   ";
 uint8_t BINARY_TEMP_X = 10;
-uint8_t BINARY_TEMP_Y = 4;
+uint8_t BINARY_TEMP_Y = 2;
 uint8_t BINARY_TEMP_DIGITS = 3;
+int8_t BINARY_SHIFT_X = 1;
 int16_t BINARY_OUT_TEMP_F = -1000; // sentinel => use internal sensor
 uint8_t BINARY_ROW_MODE = 2;
 int16_t BINARY_ROW_PROGRESS = -1;

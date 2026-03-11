@@ -121,6 +121,35 @@ static void drawGlyph3x4(FastLED_NeoMatrix *matrix, char c, int16_t x, int16_t y
     }
 }
 
+static std::map<char, std::array<const char *, 5>> FONT5 = {
+    {'0', {"111", "101", "101", "101", "111"}},
+    {'1', {"010", "110", "010", "010", "111"}},
+    {'2', {"111", "001", "111", "100", "111"}},
+    {'3', {"111", "001", "111", "001", "111"}},
+    {'4', {"101", "101", "111", "001", "001"}},
+    {'5', {"111", "100", "111", "001", "111"}},
+    {'6', {"111", "100", "111", "101", "111"}},
+    {'7', {"111", "001", "001", "001", "001"}},
+    {'8', {"111", "101", "111", "101", "111"}},
+    {'9', {"111", "101", "111", "001", "111"}},
+    {'-', {"000", "000", "111", "000", "000"}},
+    {' ', {"000", "000", "000", "000", "000"}},
+};
+
+static void drawGlyph3x5(FastLED_NeoMatrix *matrix, char c, int16_t x, int16_t y, uint32_t color)
+{
+    auto it = FONT5.find(c);
+    if (it == FONT5.end()) it = FONT5.find(' ');
+    const auto &rows = it->second;
+    for (uint8_t gy = 0; gy < 5; gy++)
+    {
+        for (uint8_t gx = 0; gx < 3; gx++)
+        {
+            if (rows[gy][gx] == '1') matrix->drawPixel(x + gx, y + gy, color);
+        }
+    }
+}
+
 static uint8_t pickNextScene()
 {
     uint8_t scenes[8];
@@ -460,6 +489,85 @@ void TimeApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
         for (size_t i = 0; i < tStr.length(); i++)
         {
             drawGlyph3x4(matrix, tStr[i], tx2 + x, ty2 + y, 0xFFFFFF);
+            tx2 += 4;
+        }
+
+        return;
+    }
+    else if (TIME_MODE == 8)
+    {
+        // Layout-preview mode baked in firmware:
+        // - 2x2 binary dots on left (HH/MM/SS)
+        // - 3x5 temperature digits on right
+        // - top-right AM/PM indicator pixel
+        struct tm *currentTime = timer_localtime();
+        int hh24 = currentTime->tm_hour;
+        int mm = currentTime->tm_min;
+        int ss = currentTime->tm_sec;
+
+        bool use12h = TIME_FORMAT.indexOf("%I") >= 0;
+        bool isPM = hh24 >= 12;
+        int hh = hh24;
+        if (use12h)
+        {
+            hh = hh24 % 12;
+            if (hh == 0)
+                hh = 12;
+        }
+
+        int d[6] = {hh / 10, hh % 10, mm / 10, mm % 10, ss / 10, ss % 10};
+        int bits[6] = {2, 4, 3, 4, 3, 4};
+        uint32_t colors[6] = {0x33CCFF, 0x33CCFF, 0x00FF66, 0x00FF66, 0xFFCC33, 0xFFCC33};
+        uint32_t off = 0x32003A;
+
+        int cx = BINARY_SHIFT_X; // layout shift
+        int xs[6];
+        for (int i = 0; i < 6; i++)
+        {
+            xs[i] = cx;
+            cx += 2;
+            if (i == 0 || i == 2 || i == 4)
+                cx += 1;
+            else if (i == 1 || i == 3)
+                cx += 2;
+        }
+
+        // draw 2x2 blocks
+        for (int i = 0; i < 6; i++)
+        {
+            for (int b = 0; b < bits[i]; b++)
+            {
+                bool on = (d[i] >> b) & 1;
+                int row = 3 - b;
+                int y0 = row * 2;
+                int x0 = xs[i];
+                uint32_t c = on ? colors[i] : off;
+                matrix->drawPixel(x0 + x, y0 + y, c);
+                matrix->drawPixel(x0 + 1 + x, y0 + y, c);
+                matrix->drawPixel(x0 + x, y0 + 1 + y, c);
+                matrix->drawPixel(x0 + 1 + x, y0 + 1 + y, c);
+            }
+        }
+
+        // AM/PM indicator in top-right corner (dim red for PM, dim purple for AM)
+        if (use12h)
+        {
+            uint32_t ampm = isPM ? rgb(50, 0, 0) : rgb(20, 0, 20);
+            matrix->drawPixel(31 + x, 0 + y, ampm);
+        }
+
+        // temperature digits (3x5 chunky)
+        int tempF = (BINARY_OUT_TEMP_F > -500) ? BINARY_OUT_TEMP_F : int(round((CURRENT_TEMP * 9 / 5) + 32));
+        String tStr = String(tempF);
+        uint8_t maxDigits = constrain(BINARY_TEMP_DIGITS, (uint8_t)1, (uint8_t)3);
+        if (tStr.length() > maxDigits)
+            tStr = tStr.substring(tStr.length() - maxDigits);
+
+        int tx2 = BINARY_TEMP_X;
+        int ty2 = BINARY_TEMP_Y;
+        for (size_t i = 0; i < tStr.length(); i++)
+        {
+            drawGlyph3x5(matrix, tStr[i], tx2 + x, ty2 + y, 0xFFFFFF);
             tx2 += 4;
         }
 
