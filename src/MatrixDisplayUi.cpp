@@ -88,6 +88,19 @@ void MatrixDisplayUi::setTimePerApp(long time)
 {
   this->ticksPerApp = time / updateInterval;
 }
+
+void MatrixDisplayUi::setTimePerAppList(const std::vector<long> &timesMs)
+{
+  ticksPerAppByIndex.clear();
+  ticksPerAppByIndex.reserve(timesMs.size());
+  for (long ms : timesMs)
+  {
+    long ticks = ms > 0 ? (ms / updateInterval) : ticksPerApp;
+    if (ticks <= 0)
+      ticks = ticksPerApp;
+    ticksPerAppByIndex.push_back(ticks);
+  }
+}
 void MatrixDisplayUi::setTimePerTransition(uint16_t time)
 {
   this->ticksPerTransition = (int)((float)time / (float)updateInterval);
@@ -222,7 +235,13 @@ void MatrixDisplayUi::tick()
         this->state.appTransitionDirection = 1;
         this->state.manualControl = false;
       }
-      if (this->state.ticksSinceLastStateSwitch >= this->ticksPerApp)
+      long currentTicksPerApp = this->ticksPerApp;
+      if (this->state.currentApp < ticksPerAppByIndex.size() && ticksPerAppByIndex[this->state.currentApp] > 0)
+      {
+        currentTicksPerApp = ticksPerAppByIndex[this->state.currentApp];
+      }
+
+      if (this->state.ticksSinceLastStateSwitch >= currentTicksPerApp)
       {
         if (this->setAutoTransition)
         {

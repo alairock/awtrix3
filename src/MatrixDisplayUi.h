@@ -29,6 +29,7 @@
 #define MatrixDisplayUi_h
 
 #include <Arduino.h>
+#include <vector>
 #include "FastLED_NeoMatrix.h"
 #include "GifPlayer.h"
 #include "DisplayManager.h"
@@ -96,6 +97,7 @@ private:
   int8_t lastTransitionDirection = 1;
 
   long ticksPerApp = 151;           // ~ 5000ms at 30 FPS
+  std::vector<long> ticksPerAppByIndex;
   uint16_t ticksPerTransition = 15; // ~  500ms at 30 FPS
 
   bool setAutoTransition = true;
@@ -168,6 +170,12 @@ public:
    *  Set the approx. time a app is displayed
    */
   void setTimePerApp(long time);
+
+  /**
+   * Set per-app display times in milliseconds, aligned to current app order.
+   * Any missing/invalid values fall back to setTimePerApp global duration.
+   */
+  void setTimePerAppList(const std::vector<long> &timesMs);
 
   /**
    * Set the approx. time a transition will take

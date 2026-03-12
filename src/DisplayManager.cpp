@@ -16,6 +16,7 @@
 #include "Overlays.h"
 #include "Dictionary.h"
 #include <set>
+#include <map>
 #include "GifPlayer.h"
 #include <ArtnetWifi.h>
 #include <AwtrixFont.h>
@@ -55,6 +56,54 @@ uint32_t textColor;
 // NeoMatrix
 FastLED_NeoMatrix *matrix = new FastLED_NeoMatrix(leds, 8, 8, 4, 1, NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_ROWS + NEO_MATRIX_PROGRESSIVE);
 MatrixDisplayUi *ui = new MatrixDisplayUi(matrix);
+static std::map<String, uint16_t> APP_DUR_SECONDS;
+
+static String serializeAppDurationsJson()
+{
+  DynamicJsonDocument doc(1024);
+  for (const auto &kv : APP_DUR_SECONDS)
+  {
+    doc[kv.first] = kv.second;
+  }
+  String out;
+  serializeJson(doc, out);
+  return out;
+}
+
+static void syncAppDurationsJsonFromMap()
+{
+  APP_DUR_JSON = serializeAppDurationsJson();
+}
+
+static void loadAppDurationsMapFromJson(const String &json)
+{
+  APP_DUR_SECONDS.clear();
+  if (json.isEmpty())
+    return;
+  DynamicJsonDocument doc(1024);
+  if (deserializeJson(doc, json) != DeserializationError::Ok || !doc.is<JsonObject>())
+    return;
+  JsonObject ad = doc.as<JsonObject>();
+  for (JsonPair kv : ad)
+  {
+    uint16_t sec = kv.value().as<uint16_t>();
+    if (sec > 0)
+      APP_DUR_SECONDS[String(kv.key().c_str())] = sec;
+  }
+}
+
+static void applyPerAppDurationsToUi()
+{
+  std::vector<long> durations;
+  durations.reserve(Apps.size());
+  for (const auto &app : Apps)
+  {
+    auto it = APP_DUR_SECONDS.find(app.first);
+    uint16_t sec = (it != APP_DUR_SECONDS.end() && it->second > 0) ? it->second : (TIME_PER_APP / 1000);
+    durations.push_back((long)sec * 1000L);
+  }
+  ui->setTimePerAppList(durations);
+}
 
 DisplayManager_ &DisplayManager_::getInstance()
 {
@@ -327,6 +376,7 @@ void pushCustomApp(String name, int position)
     }
 
     ui->setApps(Apps); // Add Apps
+    applyPerAppDurationsToUi();
     DisplayManager.getInstance().setAutoTransition(true);
   }
 }
@@ -390,7 +440,10 @@ void removeCustomAppFromApps(const String &name, bool setApps)
   }
 
   if (setApps)
+  {
     ui->setApps(Apps);
+    applyPerAppDurationsToUi();
+  }
   DisplayManager.getInstance().setAutoTransition(true);
   deleteCustomAppFile(name);
   DisplayManager.setAppTime(TIME_PER_APP);
@@ -1113,6 +1166,7 @@ void DisplayManager_::loadNativeApps()
 #endif
 
   ui->setApps(Apps);
+  applyPerAppDurationsToUi();
   setAutoTransition(true);
 }
 
@@ -1143,6 +1197,8 @@ void DisplayManager_::setup()
   ui->setBackgroundEffect(BACKGROUND_EFFECT);
   setAutoTransition(AUTO_TRANSITION);
   ui->init();
+  loadAppDurationsMapFromJson(APP_DUR_JSON);
+  applyPerAppDurationsToUi();
 }
 
 void ResetCustomApps()
@@ -1198,6 +1254,7 @@ void checkLifetime(uint8_t pos)
         if (DEBUG_MODE)
           DEBUG_PRINTLN("Set new Apploop");
         ui->setApps(Apps);
+        applyPerAppDurationsToUi();
       }
       else if (app.lifetimeMode == 1)
       {
@@ -1586,6 +1643,18 @@ void DisplayManager_::updateAppVector(const char *json)
     String appName = appObj["name"].as<String>();
     bool show = appObj["show"].as<bool>();
     int position = appObj.containsKey("pos") ? appObj["pos"].as<int>() : Apps.size();
+    if (appObj.containsKey("duration"))
+    {
+      uint16_t sec = appObj["duration"].as<uint16_t>();
+      if (sec > 0)
+      {
+        APP_DUR_SECONDS[appName] = sec;
+      }
+      else
+      {
+        APP_DUR_SECONDS.erase(appName);
+      }
+    }
 
     auto appIt = std::find_if(Apps.begin(), Apps.end(), [&appName](const std::pair<String, AppCallback> &app)
                               { return app.first == appName; });
@@ -1627,6 +1696,8 @@ void DisplayManager_::updateAppVector(const char *json)
 
   // Set the updated apps vector in the UI and save settings
   ui->setApps(Apps);
+  applyPerAppDurationsToUi();
+  syncAppDurationsJsonFromMap();
   saveSettings();
   sendAppLoop();
   setAutoTransition(AUTO_TRANSITION);
@@ -2018,7 +2089,7 @@ String getOverlayName()
 
 String DisplayManager_::getSettings()
 {
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<2048> doc;
   doc["MATP"] = !MATRIX_OFF;
   doc["ABRI"] = AUTO_BRIGHTNESS;
   doc["BRI"] = BRIGHTNESS;
@@ -2071,6 +2142,14 @@ String DisplayManager_::getSettings()
   doc["BAT"] = SHOW_BAT;
   doc["VOL"] = SOUND_VOLUME;
   doc["OVERLAY"] = getOverlayName();
+  if (!APP_DUR_SECONDS.empty())
+  {
+    JsonObject ad = doc.createNestedObject("APP_DUR");
+    for (const auto &kv : APP_DUR_SECONDS)
+    {
+      ad[kv.first] = kv.second;
+    }
+  }
   String jsonString;
   return serializeJson(doc, jsonString), jsonString;
 }
@@ -2099,6 +2178,20 @@ void DisplayManager_::setNewSettings(const char *json)
   else
   {
     TIME_PER_APP = TIME_PER_APP;
+  }
+
+  if (doc.containsKey("APP_DUR") && doc["APP_DUR"].is<JsonObject>())
+  {
+    JsonObject ad = doc["APP_DUR"].as<JsonObject>();
+    APP_DUR_SECONDS.clear();
+    for (JsonPair kv : ad)
+    {
+      uint16_t sec = kv.value().as<uint16_t>();
+      if (sec > 0)
+        APP_DUR_SECONDS[String(kv.key().c_str())] = sec;
+    }
+    syncAppDurationsJsonFromMap();
+    applyPerAppDurationsToUi();
   }
 
   if (doc.containsKey("OVERLAY"))
@@ -2358,7 +2451,10 @@ void DisplayManager_::reorderApps(const String &jsonString)
   }
   Apps = reorderedApps;
   ui->setApps(Apps);
+  applyPerAppDurationsToUi();
   ui->forceResetState();
+  syncAppDurationsJsonFromMap();
+  saveSettings();
 }
 
 void DisplayManager_::processDrawInstructions(int16_t xOffset, int16_t yOffset, String &drawInstructions)
