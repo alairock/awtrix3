@@ -621,10 +621,13 @@ void TimeApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
     }
 
     // time
-    DisplayManager.printText(12 + x, timePosY + y, t, TIME_MODE == 0, 2);
+    if (SHOW_TIME)
+    {
+        DisplayManager.printText(12 + x, timePosY + y, t, TIME_MODE == 0, 2);
+    }
 
     // day of month in calendar box
-    if (TIME_MODE > 0)
+    if (TIME_MODE > 0 && SHOW_DATE)
     {
         int offset;
         char day_str[3];

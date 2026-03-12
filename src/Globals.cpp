@@ -303,6 +303,7 @@ void loadSettings()
     SOUND_ACTIVE = Settings.getBool("SOUND", true);
     SOUND_VOLUME = Settings.getUInt("VOL", 25);
     APP_DUR_JSON = Settings.getString("APPDUR", "{}");
+    FACE_CFG_JSON = Settings.getString("FACECFG", "{}");
     Settings.end();
     uniqueID = getID();
     MQTT_PREFIX = String(uniqueID);
@@ -365,6 +366,7 @@ void saveSettings()
     Settings.putBool("SOUND", SOUND_ACTIVE);
     Settings.putUInt("VOL", SOUND_VOLUME);
     Settings.putString("APPDUR", APP_DUR_JSON);
+    Settings.putString("FACECFG", FACE_CFG_JSON);
     Settings.end();
 }
 
@@ -381,6 +383,7 @@ String MQTT_USER;
 String MQTT_PASS;
 String MQTT_PREFIX;
 String APP_DUR_JSON = "{}";
+String FACE_CFG_JSON = "{}";
 bool IO_BROKER = false;
 bool NET_STATIC = false;
 bool SHOW_TIME = true;

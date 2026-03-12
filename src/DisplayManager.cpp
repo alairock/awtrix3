@@ -58,6 +58,82 @@ FastLED_NeoMatrix *matrix = new FastLED_NeoMatrix(leds, 8, 8, 4, 1, NEO_MATRIX_T
 MatrixDisplayUi *ui = new MatrixDisplayUi(matrix);
 static std::map<String, uint16_t> APP_DUR_SECONDS;
 
+static bool isFaceScopedKey(const String &k)
+{
+  return k == "TFORMAT" || k == "DFORMAT" || k == "WD" || k == "CEL" ||
+         k == "SSPEED" || k == "BTEXT" || k == "BTEMPX" || k == "BTEMPY" ||
+         k == "BTDIG" || k == "BSHIFT" || k == "BTOUTF";
+}
+
+static void applyFaceKeyValue(const String &k, const JsonVariantConst &v)
+{
+  if (k == "TFORMAT") TIME_FORMAT = v.as<String>();
+  else if (k == "DFORMAT") DATE_FORMAT = v.as<String>();
+  else if (k == "WD") SHOW_WEEKDAY = v.as<bool>();
+  else if (k == "CEL") IS_CELSIUS = v.as<bool>();
+  else if (k == "SSPEED") SCROLL_SPEED = v.as<int>();
+  else if (k == "BTEXT") BINARY_TICKER_TEXT = v.as<String>();
+  else if (k == "BTEMPX") BINARY_TEMP_X = v.as<int>();
+  else if (k == "BTEMPY") BINARY_TEMP_Y = v.as<int>();
+  else if (k == "BTDIG") BINARY_TEMP_DIGITS = v.as<int>();
+  else if (k == "BSHIFT") BINARY_SHIFT_X = v.as<int>();
+  else if (k == "BTOUTF") BINARY_OUT_TEMP_F = v.as<int>();
+}
+
+static void applyFaceConfigForMode(int mode)
+{
+  DynamicJsonDocument doc(2048);
+  if (deserializeJson(doc, FACE_CFG_JSON) != DeserializationError::Ok || !doc.is<JsonObject>())
+    return;
+
+  String modeKey = String(mode);
+  if (!doc.containsKey(modeKey) || !doc[modeKey].is<JsonObject>())
+    return;
+
+  JsonObject cfg = doc[modeKey].as<JsonObject>();
+  for (JsonPair kv : cfg)
+  {
+    applyFaceKeyValue(String(kv.key().c_str()), kv.value());
+  }
+}
+
+static void upsertFaceConfigFromPayload(int mode, const DynamicJsonDocument &payload)
+{
+  DynamicJsonDocument doc(2048);
+  if (deserializeJson(doc, FACE_CFG_JSON) != DeserializationError::Ok || !doc.is<JsonObject>())
+  {
+    doc.clear();
+    doc.to<JsonObject>();
+  }
+
+  String modeKey = String(mode);
+  JsonObject root = doc.as<JsonObject>();
+  JsonObject cfg = root.containsKey(modeKey) && root[modeKey].is<JsonObject>()
+                     ? root[modeKey].as<JsonObject>()
+                     : root.createNestedObject(modeKey);
+
+  JsonObjectConst payloadObj = payload.as<JsonObjectConst>();
+  for (JsonPairConst kv : payloadObj)
+  {
+    String key = String(kv.key().c_str());
+    if (!isFaceScopedKey(key)) continue;
+    cfg[key] = kv.value();
+  }
+
+  FACE_CFG_JSON = "";
+  serializeJson(doc, FACE_CFG_JSON);
+}
+
+static String serializeFaceConfigObject()
+{
+  DynamicJsonDocument doc(2048);
+  if (deserializeJson(doc, FACE_CFG_JSON) != DeserializationError::Ok || !doc.is<JsonObject>())
+    return "{}";
+  String out;
+  serializeJson(doc, out);
+  return out;
+}
+
 static String serializeAppDurationsJson()
 {
   DynamicJsonDocument doc(1024);
@@ -2150,6 +2226,13 @@ String DisplayManager_::getSettings()
       ad[kv.first] = kv.second;
     }
   }
+
+  DynamicJsonDocument faceDoc(2048);
+  if (deserializeJson(faceDoc, FACE_CFG_JSON) == DeserializationError::Ok && faceDoc.is<JsonObject>())
+  {
+    doc["FACECFG"] = faceDoc.as<JsonObject>();
+  }
+
   String jsonString;
   return serializeJson(doc, jsonString), jsonString;
 }
@@ -2170,6 +2253,15 @@ void DisplayManager_::setNewSettings(const char *json)
       DEBUG_PRINTLN(error.c_str());
     return;
   }
+  const bool hasTmodeOnly = doc.containsKey("TMODE") && doc.size() == 1;
+
+  if (doc.containsKey("FACECFG") && doc["FACECFG"].is<JsonObject>())
+  {
+    String tmp;
+    serializeJson(doc["FACECFG"], tmp);
+    FACE_CFG_JSON = tmp;
+  }
+
   if (doc.containsKey("ATIME"))
   {
     long atime = doc["ATIME"].as<int>();
@@ -2216,6 +2308,11 @@ void DisplayManager_::setNewSettings(const char *json)
   }
 
   TIME_MODE = doc.containsKey("TMODE") ? doc["TMODE"].as<int>() : TIME_MODE;
+  if (hasTmodeOnly)
+  {
+    applyFaceConfigForMode(TIME_MODE);
+  }
+
   BINARY_TICKER_TEXT = doc.containsKey("BTEXT") ? doc["BTEXT"].as<String>() : BINARY_TICKER_TEXT;
   FW_UPDATE_URL = doc.containsKey("FWURL") ? doc["FWURL"].as<String>() : FW_UPDATE_URL;
   BINARY_TEMP_X = doc.containsKey("BTEMPX") ? doc["BTEMPX"].as<int>() : BINARY_TEMP_X;
@@ -2364,6 +2461,9 @@ void DisplayManager_::setNewSettings(const char *json)
     auto BAT_COL = doc["BAT_COL"];
     BAT_COLOR = getColorFromJsonVariant(BAT_COL, TEXTCOLOR_888);
   }
+
+  upsertFaceConfigFromPayload(TIME_MODE, doc);
+
   doc.clear();
   applyAllSettings();
   saveSettings();
