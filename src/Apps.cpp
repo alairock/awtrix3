@@ -244,9 +244,22 @@ std::vector<std::pair<String, AppCallback>> Apps;
 String currentCustomApp;
 std::map<String, CustomApp> customApps;
 
+CustomApp *getCustomAppById(const String &id)
+{
+    auto it = customApps.find(id);
+    return it != customApps.end() ? &it->second : nullptr;
+}
+
 CustomApp *getCustomAppByName(String name)
 {
-    return customApps.count(name) ? &customApps[name] : nullptr;
+    for (auto &entry : customApps)
+    {
+        if (entry.second.name == name)
+        {
+            return &entry.second;
+        }
+    }
+    return nullptr;
 }
 
 String getAppNameByFunction(AppCallback AppFunction)
@@ -814,8 +827,12 @@ void ShowCustomApp(String name, FastLED_NeoMatrix *matrix, MatrixDisplayUiState 
         return;
     }
 
-    // Get custom App by ID
-    CustomApp *ca = getCustomAppByName(name);
+    // Get custom app by internal ID first, then fall back to legacy name lookup
+    CustomApp *ca = getCustomAppById(name);
+    if (ca == nullptr)
+    {
+        ca = getCustomAppByName(name);
+    }
 
     // Abort if custom App not found
     if (ca == nullptr)

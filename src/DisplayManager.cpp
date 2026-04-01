@@ -552,9 +552,14 @@ bool parseFragmentsText(const JsonArray &fragmentArray, std::vector<uint32_t> &c
 
 bool DisplayManager_::parseCustomPage(const String &name, const char *json, bool preventSave)
 {
+  return parseCustomPage(name, name, json, preventSave);
+}
+
+bool DisplayManager_::parseCustomPage(const String &id, const String &name, const char *json, bool preventSave)
+{
   if ((strcmp(json, "") == 0) || (strcmp(json, "{}") == 0))
   {
-    removeCustomAppFromApps(name, true);
+    removeCustomAppFromApps(id, true);
     return true;
   }
 
@@ -570,7 +575,7 @@ bool DisplayManager_::parseCustomPage(const String &name, const char *json, bool
   if (doc.is<JsonObject>())
   {
     JsonObject rootObj = doc.as<JsonObject>();
-    return generateCustomPage(name, rootObj, preventSave);
+    return generateCustomPage(id, name, rootObj, preventSave);
   }
   else if (doc.is<JsonArray>())
   {
@@ -578,7 +583,9 @@ bool DisplayManager_::parseCustomPage(const String &name, const char *json, bool
     int cpIndex = 0;
     for (JsonObject customPageObject : customPagesArray)
     {
-      generateCustomPage(name + String(cpIndex), customPageObject, preventSave);
+      String pageId = id + String("_") + String(cpIndex);
+      String pageName = name + String(cpIndex);
+      generateCustomPage(pageId, pageName, customPageObject, preventSave);
       ++cpIndex;
     }
   }
@@ -607,14 +614,16 @@ void subscribeToPlaceholders(String text)
   }
 }
 
-bool DisplayManager_::generateCustomPage(const String &name, JsonObject doc, bool preventSave)
+bool DisplayManager_::generateCustomPage(const String &id, const String &name, JsonObject doc, bool preventSave)
 {
   CustomApp customApp;
 
-  if (customApps.find(name) != customApps.end())
+  if (customApps.find(id) != customApps.end())
   {
-    customApp = customApps[name];
+    customApp = customApps[id];
   }
+
+  customApp.id = id;
 
   customApp.progress = doc.containsKey("progress") ? doc["progress"].as<int>() : -1;
 
@@ -640,7 +649,7 @@ bool DisplayManager_::generateCustomPage(const String &name, JsonObject doc, boo
       }
 
       // Open the file for writing (this will overwrite the file if it already exists)
-      File file = LittleFS.open("/CUSTOMAPPS/" + name + ".json", "w");
+      File file = LittleFS.open("/CUSTOMAPPS/" + id + ".json", "w");
       if (!file)
       {
 
@@ -778,6 +787,7 @@ bool DisplayManager_::generateCustomPage(const String &name, JsonObject doc, boo
   customApp.center = doc.containsKey("center") ? doc["center"].as<bool>() : true;
   customApp.noScrolling = doc.containsKey("noScroll") ? doc["noScroll"] : false;
   customApp.name = name;
+  customApp.id = id;
 
   customApp.overlay = doc.containsKey("overlay") ? getOverlay(doc["overlay"].as<String>()) : NONE;
 
@@ -873,8 +883,8 @@ bool DisplayManager_::generateCustomPage(const String &name, JsonObject doc, boo
   customApp.lastUpdate = millis();
   customApp.lifeTimeEnd = false;
   doc.clear();
-  pushCustomApp(name, pos - 1);
-  customApps[name] = customApp;
+  pushCustomApp(id, pos - 1);
+  customApps[id] = customApp;
 
   return true;
 }

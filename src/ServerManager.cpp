@@ -161,11 +161,17 @@ void addHandler()
     mws.addHandler("/api/settings", HTTP_GET, []()
                    { mws.webserver->send_P(200, "application/json", DisplayManager.getSettings().c_str()); });
     mws.addHandler("/api/custom", HTTP_POST, []()
-                   { 
-                    if (DisplayManager.parseCustomPage(mws.webserver->arg("name"),mws.webserver->arg("plain").c_str(),false)){
-                        mws.webserver->send(200,F("text/plain"),F("OK")); 
+                   {
+                    String name = mws.webserver->arg("name");
+                    String id = mws.webserver->hasArg("id") ? mws.webserver->arg("id") : name;
+                    if (id.length() == 0)
+                    {
+                        id = name;
+                    }
+                    if (DisplayManager.parseCustomPage(id, name, mws.webserver->arg("plain").c_str(), false)){
+                        mws.webserver->send(200,F("text/plain"),F("OK"));
                     }else{
-                        mws.webserver->send(500,F("text/plain"),F("ErrorParsingJson")); 
+                        mws.webserver->send(500,F("text/plain"),F("ErrorParsingJson"));
                     } });
     mws.addHandler("/api/stats", HTTP_GET, []()
                    { mws.webserver->send_P(200, "application/json", DisplayManager.getStats().c_str()); });

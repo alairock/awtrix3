@@ -39,7 +39,7 @@ public:
     void selectButtonLong();
     void setBrightness(int);
     bool generateNotification(uint8_t source, const char *json);
-    bool generateCustomPage(const String &name, JsonObject doc, bool preventSave);
+    bool generateCustomPage(const String &id, const String &name, JsonObject doc, bool preventSave);
     void printText(int16_t x, int16_t y, const char *text, bool centered, byte textCase);
     void GradientText(int16_t x, int16_t y, const char *text, int color1, int color2, bool clear, byte textCase);
     bool setAutoTransition(bool active);
@@ -76,6 +76,7 @@ public:
     String getAppsWithIcon();
     void startArtnet();
     bool parseCustomPage(const String &name, const char *json, bool preventSave);
+    bool parseCustomPage(const String &id, const String &name, const char *json, bool preventSave);
     bool moodlight(const char *json);
     int *getLedColors();
     CRGB getPixelColor(int16_t x, int16_t y);

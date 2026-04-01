@@ -7,6 +7,7 @@
 
 struct CustomApp
 {
+    String id;
     int bounceDir = 0;
     bool hasCustomColor = false;
     uint8_t currentFrame = 0;
@@ -63,6 +64,7 @@ extern String currentCustomApp;
 extern std::map<String, CustomApp> customApps;
 extern void (*customAppCallbacks[20])(FastLED_NeoMatrix *, MatrixDisplayUiState *, int16_t, int16_t, GifPlayer *);
 
+CustomApp *getCustomAppById(const String &id);
 CustomApp *getCustomAppByName(String name);
 
 String getAppNameByFunction(AppCallback AppFunction);
